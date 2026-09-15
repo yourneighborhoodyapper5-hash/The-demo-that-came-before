@@ -143,6 +143,20 @@ body{font-family:var(--mono);color:var(--ink);user-select:none;touch-action:none
   #mobileStart{display:block;margin-top:4vh}
   #menu .mgo{display:none}
 }
+/* ---------- rebuilt start screen ---------- */
+#menu{z-index:100;background:#101010;color:#f2f0eb;cursor:default;align-items:center;justify-content:center;padding:24px;}
+#menu .wrap{width:min(760px,100%);height:auto;padding:clamp(28px,7vw,72px);border:1px solid rgba(242,240,235,.22);background:linear-gradient(135deg,#181818,#101010);box-shadow:18px 18px 0 var(--red);}
+#menu .mtag{color:var(--red);opacity:1;font-weight:700;letter-spacing:.24em}
+#menu h1{font-size:clamp(68px,14vw,150px);margin:22px 0 10px;color:#f2f0eb}
+#menu h1 span{color:var(--red)}
+#menu .mline{height:6px;width:100%;margin:0 0 24px;background:var(--red)}
+#menu .msub{max-width:520px;font-size:clamp(12px,2vw,16px);line-height:1.5;color:#f2f0eb}
+#menu .mcols{display:none}
+#menu .mgo{display:block;margin:38px 0 0;padding:0;font-size:11px;letter-spacing:.18em;color:rgba(242,240,235,.6);animation:none}
+#mobileStart{display:flex;position:relative;z-index:2;align-items:center;justify-content:space-between;width:100%;margin:28px 0 0;padding:20px 24px;border:2px solid var(--red);background:var(--red);color:#101010;font:700 clamp(14px,2vw,18px) var(--mono);letter-spacing:.2em;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;}
+#mobileStart::after{content:'A / TAP';font-size:11px;letter-spacing:.12em;}
+#mobileStart:active,#mobileStart:focus-visible{background:#f2f0eb;border-color:#f2f0eb;outline:none;}
+@media (max-width:700px){#menu{padding:16px}#menu .wrap{box-shadow:8px 8px 0 var(--red)}#menu .mgo{display:block;font-size:10px}#mobileStart{min-height:64px}}
 </style>
 </head>
 <body>
@@ -192,7 +206,7 @@ body{font-family:var(--mono);color:var(--ink);user-select:none;touch-action:none
 
 <div id="menu" class="ov">
   <div class="wrap">
-    <div class="mtag">ARENA PROTOCOL // 12 WEAPONS // NO MERCY</div>
+    <div class="mtag">ARENA PROTOCOL // READY</div>
     <h1>RED<span>LINE</span></h1>
     <div class="mline"></div>
     <div class="msub">TIME ONLY SLOWS WHEN YOU STOP. SO DON'T.</div>
@@ -215,8 +229,8 @@ body{font-family:var(--mono);color:var(--ink);user-select:none;touch-action:none
       </div>
       <div class="mguns" id="gunList"></div>
     </div>
-    <div class="mgo">CLICK — OR PRESS A / MENU — TO DEPLOY</div>
     <button id="mobileStart" type="button">START GAME</button>
+    <div class="mgo">TAP THE BUTTON, PRESS A, OR PRESS ENTER TO DEPLOY</div>
   </div>
 </div>
 
@@ -1517,6 +1531,9 @@ requestAnimationFrame(loop);
 <script>
 (() => {
   let previousA=false,previousMenu=false;
+  function startFromInput(){
+    if(window.redlineMode?.()==='menu'&&window.startREDLINE)window.startREDLINE();
+  }
   function pollXboxStart(){
     const pads=navigator.getGamepads?navigator.getGamepads():[];
     const pad=[...pads].find(gamepad=>gamepad&&gamepad.connected);
@@ -1524,9 +1541,11 @@ requestAnimationFrame(loop);
     const a=!!pad.buttons[0]?.pressed;
     const menu=!!pad.buttons[9]?.pressed;
     const startPressed=(a&&!previousA)||(menu&&!previousMenu);
-    if(startPressed&&window.redlineMode?.()==='menu'&&window.startREDLINE)window.startREDLINE();
+    if(startPressed)startFromInput();
     previousA=a;previousMenu=menu;
   }
+  addEventListener('keydown',e=>{if(e.code==='Enter'||e.code==='NumpadEnter')startFromInput();});
+  document.getElementById('mobileStart').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();startFromInput();},{passive:false});
   addEventListener('gamepadconnected',pollXboxStart);
   setInterval(pollXboxStart,50);
 })();
