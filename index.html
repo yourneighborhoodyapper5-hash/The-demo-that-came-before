@@ -1446,6 +1446,7 @@ buildSlots();hudWeapon();hudAmmo();updateSlots();
 { // gun list on the menu
   $('gunList').innerHTML=GUNS.map((g,i)=>`<div><b>${pad2(i+1)}</b>${g.name} — ${g.sub}</div>`).join('');
 }
+startGame(false);
 requestAnimationFrame(loop);
 </script>
 <script type="text/plain" id="replacementGameScript">
