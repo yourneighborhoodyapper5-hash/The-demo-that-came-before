@@ -1293,6 +1293,8 @@ function startGame(withMouse=true){
   mode='play';
   if(withMouse)lockMouse();
 }
+window.startREDLINE=()=>startGame(false);
+window.redlineMode=()=>mode;
 function pauseGame(){
   if(mode!=='play')return;
   mode='pause';mouseFire=false;mouseAds=false;
@@ -1510,6 +1512,23 @@ requestAnimationFrame(loop);
   const mobileStart=$('mobileStart');function startFromButton(e){e.preventDefault();e.stopPropagation();if(mode==='menu')start();}mobileStart.addEventListener('pointerdown',startFromButton);mobileStart.addEventListener('touchstart',startFromButton,{passive:false});mobileStart.addEventListener('click',startFromButton);
   $('menu').addEventListener('click',e=>{if(e.target!==mobileStart&&mode==='menu')start();});$('death').addEventListener('click',start);$('pause').addEventListener('click',pause);
   setInterval(keyboard,16);requestAnimationFrame(loop);
+})();
+</script>
+<script>
+(() => {
+  let previousA=false,previousMenu=false;
+  function pollXboxStart(){
+    const pads=navigator.getGamepads?navigator.getGamepads():[];
+    const pad=[...pads].find(gamepad=>gamepad&&gamepad.connected);
+    if(!pad){previousA=previousMenu=false;return;}
+    const a=!!pad.buttons[0]?.pressed;
+    const menu=!!pad.buttons[9]?.pressed;
+    const startPressed=(a&&!previousA)||(menu&&!previousMenu);
+    if(startPressed&&window.redlineMode?.()==='menu'&&window.startREDLINE)window.startREDLINE();
+    previousA=a;previousMenu=menu;
+  }
+  addEventListener('gamepadconnected',pollXboxStart);
+  setInterval(pollXboxStart,50);
 })();
 </script>
 </body>
