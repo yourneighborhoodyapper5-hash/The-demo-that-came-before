@@ -1321,7 +1321,16 @@ document.addEventListener('pointerlockchange',()=>{
     if(mode==='pause'){mode='play';$('pause').classList.add('off');AC&&AC.resume();nextBeat=AC?AC.currentTime:0;}
   }
 });
- $('mobileStart').addEventListener('click',e=>{e.stopPropagation();startGame(false);});
+ const mobileStart=$('mobileStart');
+ let mobileStartHandled=false;
+ function activateMobileStart(e){
+   e.preventDefault();e.stopPropagation();
+   if(mobileStartHandled||mode!=='menu')return;
+   mobileStartHandled=true;startGame(false);
+   setTimeout(()=>mobileStartHandled=false,400);
+ }
+ mobileStart.addEventListener('pointerup',activateMobileStart);
+ mobileStart.addEventListener('click',activateMobileStart);
  $('menu').addEventListener('click',()=>startGame(!('ontouchstart' in window)));
  $('death').addEventListener('click',()=>startGame(!('ontouchstart' in window)));
  $('pause').addEventListener('click',()=>('ontouchstart' in window)?resumePad():lockMouse());
