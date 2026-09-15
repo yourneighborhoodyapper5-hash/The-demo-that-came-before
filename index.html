@@ -78,6 +78,9 @@ body{font-family:var(--mono);color:var(--ink);user-select:none;touch-action:none
 .chev{position:absolute;left:0;top:0;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:13px solid var(--red);display:none}
 #padInd{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);font-size:10px;letter-spacing:.3em;display:none;z-index:20;pointer-events:none;opacity:.8}
 #padInd::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:9px}
+#lockTip{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);background:var(--ink);color:var(--bg);
+  font-size:10px;letter-spacing:.22em;padding:9px 16px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:30;white-space:nowrap}
+#lockTip.on{opacity:.92}
 /* banner + marquee */
 #banner{position:absolute;left:0;right:0;top:34%;text-align:center;font-family:var(--disp);font-size:11vh;opacity:0}
 #banner.on{animation:ban 1.7s ease both}
@@ -90,6 +93,17 @@ body{font-family:var(--mono);color:var(--ink);user-select:none;touch-action:none
 #marquee.on div:nth-child(3){animation:mA 2s linear both}
 @keyframes mA{from{transform:translateX(2%)}to{transform:translateX(-38%)}}
 @keyframes mB{from{transform:translateX(-38%)}to{transform:translateX(2%)}}
+/* ---------- big action buttons ---------- */
+.bigBtn{display:block;pointer-events:auto;width:min(320px,78vw);padding:21px 0;margin:3vh 0 0;
+ background:var(--red);color:var(--bg);border:none;border-radius:0;
+ box-shadow:6px 6px 0 rgba(16,16,16,.9);
+ font-family:var(--disp);font-size:22px;letter-spacing:.28em;text-indent:.28em;
+ cursor:pointer;touch-action:manipulation;-webkit-appearance:none;appearance:none;
+ transition:transform .06s,box-shadow .06s}
+.bigBtn:active{transform:translate(3px,3px);box-shadow:2px 2px 0 rgba(16,16,16,.9)}
+.bigBtn:focus{outline:none}
+#death .bigBtn,#pause .bigBtn{margin-left:auto;margin-right:auto}
+#rotate .bigBtn{width:min(260px,64vw);padding:16px 0;font-size:15px;margin-top:1vh}
 /* ---------- touch UI ---------- */
 #touchUI{position:absolute;inset:0;display:none;z-index:6}
 body.touch #touchUI{display:block}
@@ -122,7 +136,8 @@ body.touch #waveL{left:max(14px,env(safe-area-inset-left))}
 .ov{position:absolute;inset:0;background:rgba(242,240,235,.82);backdrop-filter:blur(9px);display:flex;pointer-events:auto;cursor:pointer;z-index:10}
 .ov.off{display:none}
 .mtag{font-size:11px;letter-spacing:.32em;opacity:.55}
-#menu .wrap{padding:5vh 6vw;display:flex;flex-direction:column;height:100%;width:100%;overflow:auto}
+#menu .wrap{padding:5vh 6vw;display:flex;flex-direction:column;height:100%;width:100%;overflow:auto;
+  touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 #menu h1,#death h2{font-family:var(--disp);line-height:.9;letter-spacing:-.01em}
 #menu h1{font-size:clamp(70px,13vw,185px);margin-top:3vh}
 #death h2{font-size:clamp(56px,10vw,150px)}
@@ -146,7 +161,6 @@ body.touch #waveL{left:max(14px,env(safe-area-inset-left))}
 #pause{align-items:center;justify-content:center;text-align:center}
 #pause h3{font-family:var(--disp);font-size:64px}
 #pause p{margin-top:16px;font-size:12px;letter-spacing:.2em;line-height:2.2}
-/* touch-only menu variants */
 @media (pointer:coarse){
   .noTouch{display:none}
   .touchOnly{display:block}
@@ -156,15 +170,15 @@ body.touch #waveL{left:max(14px,env(safe-area-inset-left))}
   .mcols{margin-top:2.5vh;gap:5vw}
   #pause h3{font-size:44px}
 }
-/* rotate-to-landscape notice */
+/* rotate suggestion — JS-gated (menu + touch + portrait only), never blocks gameplay */
 #rotate{position:absolute;inset:0;z-index:60;background:var(--bg);display:none;flex-direction:column;
-  align-items:center;justify-content:center;gap:3vh;text-align:center;pointer-events:auto}
+  align-items:center;justify-content:center;gap:2.2vh;text-align:center;pointer-events:auto}
+#rotate.active{display:flex}
 #rotate .dev{width:56px;height:96px;border:3px solid var(--ink);border-radius:10px;position:relative;animation:rot 1.8s ease-in-out infinite}
 #rotate .dev::after{content:'';position:absolute;left:50%;bottom:6px;width:16px;height:3px;background:var(--ink);transform:translateX(-50%);border-radius:2px}
 @keyframes rot{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(90deg)}}
 #rotate h4{font-family:var(--disp);font-size:26px}
 #rotate p{font-size:11px;letter-spacing:.24em;opacity:.6}
-@media (orientation:portrait) and (pointer:coarse){#rotate{display:flex}}
 </style>
 </head>
 <body>
@@ -211,6 +225,7 @@ body.touch #waveL{left:max(14px,env(safe-area-inset-left))}
   <div id="touchHint">LEFT&nbsp;DRAG&nbsp;MOVE&nbsp;&middot;&nbsp;RIGHT&nbsp;DRAG&nbsp;LOOK&nbsp;&middot;&nbsp;TAP&nbsp;RIGHT&nbsp;FIRE</div>
 </div>
 <div id="padInd">CONTROLLER</div>
+<div id="lockTip">MOUSE CAPTURE BLOCKED — HOLD &amp; DRAG TO LOOK</div>
 
 <div id="menu" class="ov">
   <div class="wrap">
@@ -218,6 +233,7 @@ body.touch #waveL{left:max(14px,env(safe-area-inset-left))}
     <h1>RED<span>LINE</span></h1>
     <div class="mline"></div>
     <div class="msub">TIME ONLY SLOWS WHEN YOU STOP. SO DON'T.</div>
+    <button class="bigBtn" id="btnStart" type="button">DEPLOY</button>
     <div class="mcols">
       <div class="mctl noTouch">
         <div class="hd">KEYBOARD + MOUSE</div>
@@ -245,7 +261,7 @@ body.touch #waveL{left:max(14px,env(safe-area-inset-left))}
       </div>
       <div class="mguns" id="gunList"></div>
     </div>
-    <div class="mgo" data-k="CLICK — OR PRESS A / MENU — TO DEPLOY" data-t="TAP ANYWHERE TO DEPLOY">CLICK — OR PRESS A / MENU — TO DEPLOY</div>
+    <div class="mgo" data-k="CLICK — OR PRESS A / MENU — TO DEPLOY" data-t="OR TAP ANYWHERE TO DEPLOY">CLICK — OR PRESS A / MENU — TO DEPLOY</div>
   </div>
 </div>
 
@@ -254,19 +270,24 @@ body.touch #waveL{left:max(14px,env(safe-area-inset-left))}
     <h2>FLAT<span>LINED</span></h2>
     <div class="mline"></div>
     <div id="dstats"></div>
-    <div class="mgo" data-k="CLICK OR PRESS A TO REDEPLOY" data-t="TAP TO REDEPLOY">CLICK OR PRESS A TO REDEPLOY</div>
+    <button class="bigBtn" id="btnRetry" type="button">REDEPLOY</button>
+    <div class="mgo" data-k="CLICK OR PRESS A TO REDEPLOY" data-t="OR TAP ANYWHERE">CLICK OR PRESS A TO REDEPLOY</div>
   </div>
 </div>
 
 <div id="pause" class="ov off">
-  <div><h3>PAUSED</h3>
-  <p id="pauseTxt">CLICK TO RESUME<br>M MUTE &middot; SHIFT/B DASH &middot; RMB/LT ZOOM &middot; WHEEL/BUMPERS SWAP</p></div>
+  <div>
+    <h3>PAUSED</h3>
+    <p id="pauseTxt">CLICK TO RESUME<br>M MUTE &middot; SHIFT/B DASH &middot; RMB/LT ZOOM &middot; WHEEL/BUMPERS SWAP</p>
+    <button class="bigBtn" id="btnResume" type="button">RESUME</button>
+  </div>
 </div>
 
 <div id="rotate">
   <div class="dev"></div>
   <h4>ROTATE TO LANDSCAPE</h4>
-  <p>REDLINE RUNS SIDEWAYS</p>
+  <p>RECOMMENDED FOR THUMBS</p>
+  <button class="bigBtn" id="btnRotateSkip" type="button">PLAY ANYWAY</button>
 </div>
 
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"}}</script>
@@ -284,9 +305,14 @@ const pad2=n=>String(n).padStart(2,'0');
 function lerpAngle(a,b,t){let d=(b-a)%(Math.PI*2);if(d>Math.PI)d-=Math.PI*2;if(d<-Math.PI)d+=Math.PI*2;return a+d*t;}
 const tmpA=V3(),tmpB=V3(),tmpC=V3(),tmpD=V3(),UP=V3(0,1,0);
 
-/* ================= device detection + quality ================= */
-const isTouch=matchMedia('(pointer:coarse)').matches||('ontouchstart' in window&&navigator.maxTouchPoints>0);
-const QLT=isTouch?.6:1; // shard-count multiplier
+/* ================= device detection + quality =================
+   Key off the PRIMARY pointer only. Touch-screen laptops report pointer:fine
+   as primary, so they correctly take the desktop (mouse-capture) path;
+   phones/tablets report coarse and take the touch path. */
+const coarsePtr=matchMedia('(pointer:coarse)').matches;
+const finePtr=matchMedia('(pointer:fine)').matches;
+const isTouch=coarsePtr||(!finePtr&&'ontouchstart' in window&&navigator.maxTouchPoints>0);
+const QLT=isTouch?.6:1;
 
 /* ================= renderer / scene ================= */
 const app=$('app');
@@ -844,7 +870,7 @@ function explode(pos,r,dmg){
 const P={pos:V3(0,0,21),vel:V3(),onGround:true,hp:100,lastHurt:-9,yaw:0,pitch:0,roll:0,recoil:0,dashT:0,dashCd:0,bloom:0};
 const dashV=V3();let eyeH=1.62,shake=0;
 const keys={};
-function inputVec(){ // keyboard + gamepad stick + touch stick, merged, clamped to unit
+function inputVec(){
   const f=(keys.KeyW?1:0)-(keys.KeyS?1:0)-pad.moveY-touch.moveY;
   const r=(keys.KeyD?1:0)-(keys.KeyA?1:0)+pad.moveX+touch.moveX;
   const mag=Math.hypot(f,r);
@@ -910,8 +936,15 @@ function damagePlayer(d){
   if(P.hp<=0){P.hp=0;startDeath();}
 }
 
-/* ================= keyboard + mouse ================= */
+/* ================= keyboard + mouse =================
+   Mouse look works in TWO modes: pointer-lock (preferred) and, if capture is
+   unavailable (sandboxed iframes, denied permission), hold-and-drag on the
+   canvas — so the game is always playable after DEPLOY. */
 let mouseFire=false,mouseAds=false;
+function applyLook(dx,dy){
+  const sens=0.0021*(camera.fov/76);
+  P.yaw-=dx*sens;P.pitch=clamp(P.pitch-dy*sens,-1.5,1.5);
+}
 addEventListener('keydown',e=>{
   if(e.repeat)return;keys[e.code]=true;
   if(e.code==='KeyM')toggleMute();
@@ -932,15 +965,27 @@ addEventListener('mousedown',e=>{
 addEventListener('mouseup',e=>{
   if(e.button===0)mouseFire=false;
   if(e.button===2)mouseAds=false;
+  dragBtn=false;
 });
 addEventListener('wheel',e=>{if(mode==='play')switchTo((gunIdx+(e.deltaY>0?1:-1)+12)%12);});
-let lookBoost=0;
+let lookBoost=0,dragBtn=false,dragX=0,dragY=0;
+renderer.domElement.addEventListener('mousedown',e=>{
+  if(isTouch||mode!=='play'||document.pointerLockElement===renderer.domElement)return;
+  dragBtn=true;dragX=e.clientX;dragY=e.clientY;
+});
 addEventListener('mousemove',e=>{
-  if(document.pointerLockElement!==renderer.domElement)return;
-  const sens=0.0021*(camera.fov/76);
-  P.yaw-=e.movementX*sens;P.pitch=clamp(P.pitch-e.movementY*sens,-1.5,1.5);
-  swayX=clamp(swayX-e.movementX*.0004,-.05,.05);
-  lookBoost=Math.min(1,lookBoost+(Math.abs(e.movementX)+Math.abs(e.movementY))*.004);
+  const locked=document.pointerLockElement===renderer.domElement;
+  if(locked){
+    applyLook(e.movementX,e.movementY);
+    swayX=clamp(swayX-e.movementX*.0004,-.05,.05);
+    lookBoost=Math.min(1,lookBoost+(Math.abs(e.movementX)+Math.abs(e.movementY))*.004);
+  }else if(dragBtn&&mode==='play'){
+    const dx=e.clientX-dragX,dy=e.clientY-dragY;
+    dragX=e.clientX;dragY=e.clientY;
+    applyLook(dx,dy);
+    swayX=clamp(swayX-dx*.0004,-.05,.05);
+    lookBoost=Math.min(1,lookBoost+(Math.abs(dx)+Math.abs(dy))*.004);
+  }
 });
 
 /* ================= gamepad ================= */
@@ -994,7 +1039,7 @@ function padRumbleTick(){
 }
 function addRumble(w,s){
   rumbleW=Math.min(1.2,rumbleW+w);rumbleS=Math.min(1.2,rumbleS+s);
-  if(!pad.active&&navigator.vibrate)navigator.vibrate(Math.min(120,Math.round(s*45))); // phone haptics
+  if(!pad.active&&navigator.vibrate)navigator.vibrate(Math.min(120,Math.round(s*45)));
 }
 addEventListener('gamepadconnected',()=>{setPadInd(true);addRumble(.25,.55);});
 addEventListener('gamepaddisconnected',()=>{setPadInd(false);rumbleW=rumbleS=0;if(mode==='play')pauseGame();});
@@ -1020,7 +1065,7 @@ function resetTouch(){
 function initTouch(){
   document.body.classList.add('touch');
   document.querySelectorAll('.mgo').forEach(el=>{if(el.dataset.t)el.textContent=el.dataset.t;});
-  $('pauseTxt').innerHTML='TAP TO RESUME';
+  $('pauseTxt').innerHTML='PRESS RESUME TO CONTINUE';
   const layer=$('tlayer'),sB=$('stickBase'),sK=$('stickKnob');
   const R=52;
   let moveId=null,lookId=null,ox=0,oy=0,lx=0,ly=0,lT=0,lMoved=0;
@@ -1067,7 +1112,6 @@ function initTouch(){
         moveId=null;touch.moveX=touch.moveY=0;
         sB.style.display=sK.style.display='none';
       }else if(t.identifier===lookId){
-        // quick clean tap on the look side = one trigger pull
         if(performance.now()-lT<230&&lMoved<14&&mode==='play')tapFireUntil=tNow+.09;
         lookId=null;
       }
@@ -1091,7 +1135,6 @@ function initTouch(){
   bindBtn('bZoom',()=>touch.ads=true,()=>touch.ads=false);
   bindBtn('bSwap',()=>switchTo((gunIdx+1)%12));
   bindBtn('bPause',()=>pauseGame());
-  // holding FIRE and dragging also aims — the classic mobile FPS thumb
   const bF=$('bFire');let fl=null;
   bF.addEventListener('touchmove',e=>{
     e.preventDefault();
@@ -1101,7 +1144,6 @@ function initTouch(){
   },{passive:false});
   bF.addEventListener('touchstart',()=>fl=null,{passive:false});
   bF.addEventListener('touchend',()=>fl=null,{passive:false});
-  // direct weapon select by tapping the slot indicators
   $('slots').addEventListener('touchstart',e=>{
     const i=[...e.currentTarget.children].indexOf(e.target);
     if(i>=0){e.preventDefault();e.stopPropagation();switchTo(i);}
@@ -1175,7 +1217,6 @@ function audioTick(){
     kickAt(nextBeat);hatAt(nextBeat+spb/2);nextBeat+=spb;
   }
 }
-// audio unlock on any first gesture (click / key / touch — gamepad buttons don't count)
 const unlock=()=>{if(AC&&AC.state==='suspended')AC.resume().catch(()=>{});};
 addEventListener('pointerdown',unlock);
 addEventListener('keydown',unlock);
@@ -1313,15 +1354,17 @@ function resetWorld(){
   P.pos.set(0,0,21);P.vel.set(0,0,0);P.yaw=0;P.pitch=0;P.roll=0;P.hp=100;P.lastHurt=-9;P.bloom=0;P.recoil=0;
   dashV.set(0,0,0);
   ammo=GUNS.map(g=>g.mag);gunIdx=0;lastIdx=1;switchT=0;pendSw=false;reloading=0;spin=0;ts=1;hitstop=0;
-  mouseFire=false;mouseAds=false;trigger=false;adsHeld=false;wantSemi=false;tapFireUntil=-1;
+  mouseFire=false;mouseAds=false;trigger=false;adsHeld=false;wantSemi=false;tapFireUntil=-1;dragBtn=false;
   resetTouch();
   wave=0;waveActive=false;waveQueue=[];betweenT=1.2;kills=0;shots=0;hitsC=0;playT=0;dieT=0;
   applyGunVisible();hudWeapon();hudAmmo();updateSlots();
 }
 function lockMouse(){
   if(isTouch)return;
-  const p=renderer.domElement.requestPointerLock();
-  if(p&&p.catch)p.catch(()=>{});
+  try{
+    const p=renderer.domElement.requestPointerLock();
+    if(p&&p.catch)p.catch(()=>{});
+  }catch(e){}
 }
 function goFullscreen(){
   if(!isTouch)return;
@@ -1331,16 +1374,23 @@ function goFullscreen(){
     if(screen.orientation&&screen.orientation.lock)screen.orientation.lock('landscape').catch(()=>{});
   }catch(e){}
 }
+/* Hardened start: overlays are dismissed FIRST, then each risky subsystem
+   (audio / fullscreen / mouse capture) is attempted independently and can
+   fail without preventing entry. The only thing that must succeed is
+   mode='play' — and that can't throw. */
+let lastStart=0;
 function startGame(withMouse=true){
-  initAudio();if(AC)AC.resume().catch(()=>{});
-  for(const d of menuDummies){scene.remove(d.group);d.mat.dispose();}
-  menuDummies.length=0;
-  resetWorld();
+  const n=performance.now();if(n-lastStart<400)return;lastStart=n; // debounce double-fires
+  try{initAudio();if(AC)AC.resume().catch(()=>{});}catch(e){}
+  try{for(const d of menuDummies){scene.remove(d.group);d.mat.dispose();}menuDummies.length=0;}catch(e){}
+  // enter — first, unconditionally
   $('menu').classList.add('off');$('death').classList.add('off');
-  hudEl.classList.add('on');rig.visible=true;lastAmmoShown=-1;
-  mode='play';
-  goFullscreen();
-  if(withMouse)lockMouse();
+  hudEl.classList.add('on');rig.visible=true;lastAmmoShown=-1;mode='play';
+  updateRotate();
+  // then attempt the enhancements
+  try{resetWorld();}catch(e){}
+  try{goFullscreen();}catch(e){}
+  if(withMouse&&!isTouch)lockMouse();
   if(isTouch&&!hintShown){
     hintShown=true;
     const h=$('touchHint');h.classList.add('on');
@@ -1349,17 +1399,19 @@ function startGame(withMouse=true){
 }
 function pauseGame(){
   if(mode!=='play')return;
-  mode='pause';mouseFire=false;mouseAds=false;
+  mode='pause';mouseFire=false;mouseAds=false;dragBtn=false;
   resetTouch();
   $('pause').classList.remove('off');
   if(AC)AC.suspend();
   if(document.pointerLockElement)document.exitPointerLock();
+  updateRotate();
 }
 function resumeGame(){
+  if(mode!=='pause')return;
   mode='play';$('pause').classList.add('off');
   if(AC){AC.resume().catch(()=>{});nextBeat=AC.currentTime+.1;}
 }
-function startDeath(){mode='dying';dieT=0;mouseFire=false;mouseAds=false;resetTouch();}
+function startDeath(){mode='dying';dieT=0;mouseFire=false;mouseAds=false;dragBtn=false;resetTouch();}
 function showDeath(){
   mode='dead';if(document.pointerLockElement)document.exitPointerLock();
   const acc=shots?Math.round(hitsC/shots*100):0;
@@ -1370,17 +1422,54 @@ function showDeath(){
   $('death').classList.remove('off');hudEl.classList.remove('on');rig.visible=false;
 }
 document.addEventListener('pointerlockchange',()=>{
-  if(document.pointerLockElement!==renderer.domElement){
-    if(mode==='play'&&!isTouch)pauseGame();
-  }else{
+  if(document.pointerLockElement===renderer.domElement){
+    dragBtn=false;
     if(mode==='pause')resumeGame();
+  }else{
+    if(mode==='play'&&!isTouch)pauseGame();
   }
+});
+// pointer lock denied (sandboxed iframes etc.) — tell the player about drag-look
+let lockTipAt=0;
+document.addEventListener('pointerlockerror',()=>{
+  const n=Date.now();if(n-lockTipAt<4000)return;lockTipAt=n;
+  const t=$('lockTip');t.classList.add('on');
+  setTimeout(()=>t.classList.remove('on'),2600);
 });
  $('menu').addEventListener('click',()=>startGame(!isTouch));
  $('death').addEventListener('click',()=>startGame(!isTouch));
- $('pause').addEventListener('click',()=>{isTouch?resumeGame():lockMouse();});
+ $('pause').addEventListener('click',()=>{resumeGame();if(!isTouch)lockMouse();});
 renderer.domElement.addEventListener('click',()=>{if(!isTouch&&mode==='play'&&!document.pointerLockElement)lockMouse();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&mode==='play')pauseGame();});
+
+/* rotate suggestion: JS-gated so it can NEVER block the buttons or a running
+   game — it only appears on the menu, on a coarse-pointer device, in portrait,
+   and it's dismissible. */
+const portraitQ=matchMedia('(orientation:portrait)');
+let rotateDismissed=false;
+function updateRotate(){
+  const show=mode==='menu'&&isTouch&&portraitQ.matches&&!rotateDismissed;
+  $('rotate').classList.toggle('active',show);
+}
+if(portraitQ.addEventListener)portraitQ.addEventListener('change',updateRotate);
+addEventListener('orientationchange',()=>setTimeout(updateRotate,300));
+
+/* Buttons: single tap pipeline via pointer events, debounced, working on
+   mouse, touch and pen alike. pointerdown gives instant entry on mobile. */
+function bindTap(id,fn){
+  const el=$(id);let lastT=0;
+  const h=e=>{
+    e.preventDefault();e.stopPropagation();
+    const n=performance.now();if(n-lastT<350)return;lastT=n;
+    fn();
+  };
+  el.addEventListener('pointerdown',h);
+  el.addEventListener('click',h); // fallback path; debounce prevents double-start
+}
+bindTap('btnStart',()=>startGame(!isTouch));
+bindTap('btnRetry',()=>startGame(!isTouch));
+bindTap('btnResume',()=>{resumeGame();if(!isTouch)lockMouse();});
+bindTap('btnRotateSkip',()=>{rotateDismissed=true;updateRotate();});
 
 /* ================= main loop ================= */
 let tNow=0,last=performance.now();
@@ -1469,6 +1558,7 @@ function loop(now){
 }
 buildSlots();hudWeapon();hudAmmo();updateSlots();
  $('gunList').innerHTML=GUNS.map((g,i)=>`<div><b>${pad2(i+1)}</b>${g.name} — ${g.sub}</div>`).join('');
+updateRotate();
 requestAnimationFrame(loop);
 </script>
 </body>
