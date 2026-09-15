@@ -96,6 +96,8 @@ body{font-family:var(--mono);color:var(--ink);user-select:none;touch-action:none
   .mcols{margin-top:3vh}.mctl:nth-child(2),.mguns{display:none}
   .mline{width:min(65vw,300px)}
   #menu .mgo{font-size:11px}
+  #mobileStart{display:block;margin-top:4vh}
+  #menu .mgo{display:none}
 }
 /* banner + marquee */
 #banner{position:absolute;left:0;right:0;top:34%;text-align:center;font-family:var(--disp);font-size:11vh;opacity:0}
@@ -127,6 +129,7 @@ body{font-family:var(--mono);color:var(--ink);user-select:none;touch-action:none
 .mguns div{break-inside:avoid;white-space:nowrap}
 .mguns b{color:var(--red);margin-right:10px}
 .mgo{margin-top:auto;font-weight:700;letter-spacing:.3em;font-size:13px;animation:pulse 1.2s ease-in-out infinite;padding-bottom:1vh}
+#mobileStart{display:none;border:0;background:var(--red);color:var(--bg);font:700 13px var(--mono);letter-spacing:.2em;padding:16px 22px;min-height:52px;align-self:flex-start;cursor:pointer;touch-action:manipulation}
 @keyframes pulse{50%{opacity:.25}}
 #death{align-items:center;justify-content:center}
 #death .wrap{text-align:center}
@@ -209,6 +212,7 @@ body{font-family:var(--mono);color:var(--ink);user-select:none;touch-action:none
       <div class="mguns" id="gunList"></div>
     </div>
     <div class="mgo">CLICK — OR PRESS A / MENU — TO DEPLOY</div>
+    <button id="mobileStart" type="button">START GAME</button>
   </div>
 </div>
 
@@ -1313,6 +1317,7 @@ document.addEventListener('pointerlockchange',()=>{
     if(mode==='pause'){mode='play';$('pause').classList.add('off');AC&&AC.resume();nextBeat=AC?AC.currentTime:0;}
   }
 });
+ $('mobileStart').addEventListener('click',e=>{e.stopPropagation();startGame(false);});
  $('menu').addEventListener('click',()=>startGame(!('ontouchstart' in window)));
  $('death').addEventListener('click',()=>startGame(!('ontouchstart' in window)));
  $('pause').addEventListener('click',()=>('ontouchstart' in window)?resumePad():lockMouse());
