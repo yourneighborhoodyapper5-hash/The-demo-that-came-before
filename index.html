@@ -75,6 +75,28 @@ body{font-family:var(--mono);color:var(--ink);user-select:none;touch-action:none
 .chev{position:absolute;left:0;top:0;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:13px solid var(--red);display:none}
 #padInd{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);font-size:10px;letter-spacing:.3em;display:none;z-index:20;pointer-events:none;opacity:.8}
 #padInd::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:9px}
+/* ---------- touch controls ---------- */
+#touchControls{display:none;position:absolute;inset:0;z-index:5;pointer-events:none;color:var(--ink)}
+#touchLook{position:absolute;inset:0 0 0 35%;pointer-events:auto;touch-action:none}
+#touchStick{position:absolute;left:24px;bottom:24px;width:132px;height:132px;border:1px solid rgba(16,16,16,.28);border-radius:50%;background:rgba(242,240,235,.16);pointer-events:auto;touch-action:none}
+#touchKnob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px;border:2px solid var(--ink);border-radius:50%;background:rgba(242,240,235,.45);transform:translate(0,0);will-change:transform}
+#touchActions{position:absolute;right:18px;bottom:20px;display:grid;grid-template-columns:repeat(3,52px);gap:9px;pointer-events:auto}
+.touchBtn{width:52px;height:52px;border:1px solid rgba(16,16,16,.45);border-radius:50%;background:rgba(242,240,235,.72);font:700 10px var(--mono);color:var(--ink);touch-action:none;-webkit-tap-highlight-color:transparent}
+.touchBtn:active,.touchBtn.held{background:var(--ink);color:var(--bg)}
+#touchPause{position:absolute;right:18px;top:18px;width:42px;height:42px}
+@media (pointer:coarse), (max-width:700px){
+  #touchControls{display:block}
+  #padInd{display:none!important}
+  #wpn{left:18px;bottom:18px;transform:scale(.78);transform-origin:left bottom}
+  #vit{right:18px;bottom:18px;transform:scale(.78);transform-origin:right bottom}
+  #waveL{left:18px;top:16px}#killL{right:18px;top:16px}
+  #twrap{top:calc(50% + 24px)}
+  #menu .wrap{padding:5vh 7vw}
+  #menu h1{font-size:clamp(58px,18vw,110px)}
+  .mcols{margin-top:3vh}.mctl:nth-child(2),.mguns{display:none}
+  .mline{width:min(65vw,300px)}
+  #menu .mgo{font-size:11px}
+}
 /* banner + marquee */
 #banner{position:absolute;left:0;right:0;top:34%;text-align:center;font-family:var(--disp);font-size:11vh;opacity:0}
 #banner.on{animation:ban 1.7s ease both}
@@ -147,6 +169,19 @@ body{font-family:var(--mono);color:var(--ink);user-select:none;touch-action:none
   <div id="marquee"><div></div><div></div><div></div></div>
 </div>
 <div id="padInd">CONTROLLER</div>
+<div id="touchControls" aria-label="Touch controls">
+  <div id="touchLook" aria-label="Drag to look"></div>
+  <div id="touchStick" aria-label="Move"><div id="touchKnob"></div></div>
+  <div id="touchActions">
+    <button class="touchBtn" data-touch="fire">FIRE</button>
+    <button class="touchBtn" data-touch="zoom">ZOOM</button>
+    <button class="touchBtn" data-touch="dash">DASH</button>
+    <button class="touchBtn" data-touch="jump">JUMP</button>
+    <button class="touchBtn" data-touch="reload">RLD</button>
+    <button class="touchBtn" data-touch="swap">SWAP</button>
+  </div>
+  <button id="touchPause" class="touchBtn" data-touch="pause" aria-label="Pause">||</button>
+</div>
 
 <div id="menu" class="ov">
   <div class="wrap">
@@ -830,9 +865,10 @@ function explode(pos,r,dmg){
 const P={pos:V3(0,0,21),vel:V3(),onGround:true,hp:100,lastHurt:-9,yaw:0,pitch:0,roll:0,recoil:0,dashT:0,dashCd:0,bloom:0};
 const dashV=V3();let eyeH=1.62,shake=0;
 const keys={};
+const touch={moveX:0,moveY:0,lookX:0,lookY:0,fire:false,zoom:false,jump:false,stickId:null,lookId:null};
 function inputVec(){
-  const f=(keys.KeyW?1:0)-(keys.KeyS?1:0)-pad.moveY;   // stick up = forward
-  const r=(keys.KeyD?1:0)-(keys.KeyA?1:0)+pad.moveX;
+  const f=(keys.KeyW?1:0)-(keys.KeyS?1:0)-pad.moveY+touch.moveY;
+  const r=(keys.KeyD?1:0)-(keys.KeyA?1:0)+pad.moveX+touch.moveX;
   const mag=Math.hypot(f,r);
   if(mag<1e-4)return{x:0,z:0,mag:0};
   const s=mag>1?1/mag:1;
@@ -861,7 +897,7 @@ function updatePlayer(dt){
   P.vel.x+=(mv.x*spd-P.vel.x)*k;P.vel.z+=(mv.z*spd-P.vel.z)*k;
   P.dashCd-=dt;if(P.dashT>0)P.dashT-=dt;
   dashV.multiplyScalar(Math.exp(-7*dt));
-  if((keys.Space||pad.jump)&&P.onGround){P.vel.y=7.6;P.onGround=false;}
+  if((keys.Space||pad.jump||touch.jump)&&P.onGround){P.vel.y=7.6;P.onGround=false;}
   P.vel.y-=21*dt;
   const prevY=P.pos.y;
   P.pos.x+=(P.vel.x+dashV.x)*dt;P.pos.z+=(P.vel.z+dashV.z)*dt;
@@ -928,6 +964,43 @@ addEventListener('mousemove',e=>{
   P.yaw-=e.movementX*sens;P.pitch=clamp(P.pitch-e.movementY*sens,-1.5,1.5);
   swayX=clamp(swayX-e.movementX*.0004,-.05,.05);
   lookBoost=Math.min(1,lookBoost+(Math.abs(e.movementX)+Math.abs(e.movementY))*.004);
+});
+
+/* ================= touch controls ================= */
+const touchStick=$('touchStick'),touchKnob=$('touchKnob'),touchLook=$('touchLook');
+const touchRadius=66;
+function setTouchStick(e){
+  const r=touchStick.getBoundingClientRect(),x=e.clientX-(r.left+r.width/2),y=e.clientY-(r.top+r.height/2);
+  const d=Math.min(touchRadius,Math.hypot(x,y)),a=Math.atan2(y,x),nx=Math.cos(a)*d,ny=Math.sin(a)*d;
+  touchKnob.style.transform=`translate(${nx}px,${ny}px)`;
+  touch.moveX=nx/touchRadius;touch.moveY=-ny/touchRadius;
+}
+function clearTouchStick(){touch.stickId=null;touch.moveX=touch.moveY=0;touchKnob.style.transform='translate(0,0)';}
+touchStick.addEventListener('pointerdown',e=>{if(mode!=='play')return;e.preventDefault();touch.stickId=e.pointerId;touchStick.setPointerCapture(e.pointerId);setTouchStick(e);});
+touchStick.addEventListener('pointermove',e=>{if(e.pointerId===touch.stickId)setTouchStick(e);});
+touchStick.addEventListener('pointerup',e=>{if(e.pointerId===touch.stickId)clearTouchStick();});
+touchStick.addEventListener('pointercancel',clearTouchStick);
+touchLook.addEventListener('pointerdown',e=>{if(mode!=='play')return;e.preventDefault();touch.lookId=e.pointerId;touchLook.setPointerCapture(e.pointerId);});
+touchLook.addEventListener('pointermove',e=>{
+  if(e.pointerId!==touch.lookId)return;
+  touch.lookX+=e.movementX;touch.lookY+=e.movementY;
+});
+touchLook.addEventListener('pointerup',e=>{if(e.pointerId===touch.lookId)touch.lookId=null;});
+touchLook.addEventListener('pointercancel',e=>{if(e.pointerId===touch.lookId)touch.lookId=null;});
+document.querySelectorAll('[data-touch]').forEach(button=>{
+  const action=button.dataset.touch;
+  button.addEventListener('pointerdown',e=>{
+    if(mode!=='play')return;e.preventDefault();button.setPointerCapture(e.pointerId);button.classList.add('held');
+    if(action==='fire'){touch.fire=true;wantSemi=true;}
+    if(action==='zoom')touch.zoom=true;
+    if(action==='jump')touch.jump=true;
+    if(action==='dash')tryDash();
+    if(action==='reload')startReload();
+    if(action==='swap')switchTo((gunIdx+1)%12);
+    if(action==='pause')pauseGame();
+  });
+  const release=()=>{button.classList.remove('held');if(action==='fire')touch.fire=false;if(action==='zoom')touch.zoom=false;if(action==='jump')touch.jump=false;};
+  button.addEventListener('pointerup',release);button.addEventListener('pointercancel',release);
 });
 
 /* ================= gamepad ================= */
@@ -1197,6 +1270,7 @@ function resetWorld(){
   dashV.set(0,0,0);
   ammo=GUNS.map(g=>g.mag);gunIdx=0;lastIdx=1;switchT=0;pendSw=false;reloading=0;spin=0;ts=1;hitstop=0;
   mouseFire=false;mouseAds=false;trigger=false;adsHeld=false;wantSemi=false;
+  touch.moveX=touch.moveY=touch.lookX=touch.lookY=0;touch.fire=touch.zoom=touch.jump=false;clearTouchStick();
   wave=0;waveActive=false;waveQueue=[];betweenT=1.2;kills=0;shots=0;hitsC=0;playT=0;dieT=0;
   applyGunVisible();hudWeapon();hudAmmo();updateSlots();
 }
@@ -1239,9 +1313,9 @@ document.addEventListener('pointerlockchange',()=>{
     if(mode==='pause'){mode='play';$('pause').classList.add('off');AC&&AC.resume();nextBeat=AC?AC.currentTime:0;}
   }
 });
- $('menu').addEventListener('click',()=>startGame(true));
- $('death').addEventListener('click',()=>startGame(true));
- $('pause').addEventListener('click',lockMouse);
+ $('menu').addEventListener('click',()=>startGame(!('ontouchstart' in window)));
+ $('death').addEventListener('click',()=>startGame(!('ontouchstart' in window)));
+ $('pause').addEventListener('click',()=>('ontouchstart' in window)?resumePad():lockMouse());
 // pad-mode playing + click = switch to mouse seamlessly
 renderer.domElement.addEventListener('click',()=>{if(mode==='play'&&!document.pointerLockElement)lockMouse();});
 
@@ -1262,8 +1336,8 @@ function update(dt){
   tNow+=dt;
   if(mode==='play'){
     // merge mouse + pad state, then consume pad edges
-    trigger=mouseFire||pad.fire;
-    adsHeld=mouseAds||pad.ads;
+    trigger=mouseFire||pad.fire||touch.fire;
+    adsHeld=mouseAds||pad.ads||touch.zoom;
     if(pad.active){
       if(pad.e.b)tryDash();
       if(pad.e.x||pad.e.dd)startReload();
@@ -1271,6 +1345,13 @@ function update(dt){
       if(pad.e.rb||pad.e.dr)switchTo((gunIdx+1)%12);
       if(pad.e.lb||pad.e.dl)switchTo((gunIdx+11)%12);
       if(pad.e.fire)wantSemi=true;
+    }
+    if(touch.lookX||touch.lookY){
+      const sens=.0042*(camera.fov/76);
+      P.yaw-=touch.lookX*sens;P.pitch=clamp(P.pitch-touch.lookY*sens,-1.5,1.5);
+      swayX=clamp(swayX-touch.lookX*.0004,-.05,.05);
+      lookBoost=Math.min(1,lookBoost+(Math.abs(touch.lookX)+Math.abs(touch.lookY))*.004);
+      touch.lookX=touch.lookY=0;
     }
     padLook(dt);
     const sp=Math.hypot(P.vel.x,P.vel.z);
