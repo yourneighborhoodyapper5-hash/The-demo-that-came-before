@@ -73,6 +73,8 @@ body{font-family:var(--mono);color:var(--ink);user-select:none;touch-action:none
 #barB{bottom:0;transform:translateY(101%)}
 #mut{position:absolute;top:22px;left:50%;transform:translateX(-50%);font-size:10px;letter-spacing:.3em;color:var(--red);display:none}
 .chev{position:absolute;left:0;top:0;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:13px solid var(--red);display:none}
+#padInd{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);font-size:10px;letter-spacing:.3em;display:none;z-index:20;pointer-events:none;opacity:.8}
+#padInd::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:9px}
 /* banner + marquee */
 #banner{position:absolute;left:0;right:0;top:34%;text-align:center;font-family:var(--disp);font-size:11vh;opacity:0}
 #banner.on{animation:ban 1.7s ease both}
@@ -96,8 +98,9 @@ body{font-family:var(--mono);color:var(--ink);user-select:none;touch-action:none
 #menu h1 span,#death h2 span{color:var(--red)}
 .mline{width:min(38vw,520px);height:10px;background:var(--red);margin:2.4vh 0}
 .msub{font-size:13px;letter-spacing:.24em;font-weight:700}
-.mcols{display:flex;gap:7vw;margin-top:4vh;font-size:12px;line-height:2;flex-wrap:wrap}
+.mcols{display:flex;gap:5vw;margin-top:4vh;font-size:12px;line-height:2;flex-wrap:wrap}
 .mctl kbd{display:inline-block;border:1.5px solid var(--ink);padding:0 6px;font:inherit;margin-right:8px;min-width:26px;text-align:center}
+.mctl .hd{opacity:.5;letter-spacing:.3em;font-size:9px;margin-bottom:8px}
 .mguns{column-count:2;column-gap:44px;min-width:400px}
 .mguns div{break-inside:avoid;white-space:nowrap}
 .mguns b{color:var(--red);margin-right:10px}
@@ -143,6 +146,7 @@ body{font-family:var(--mono);color:var(--ink);user-select:none;touch-action:none
   <div id="banner">WAVE 01</div>
   <div id="marquee"><div></div><div></div><div></div></div>
 </div>
+<div id="padInd">CONTROLLER</div>
 
 <div id="menu" class="ov">
   <div class="wrap">
@@ -152,15 +156,24 @@ body{font-family:var(--mono);color:var(--ink);user-select:none;touch-action:none
     <div class="msub">TIME ONLY SLOWS WHEN YOU STOP. SO DON'T.</div>
     <div class="mcols">
       <div class="mctl">
+        <div class="hd">KEYBOARD + MOUSE</div>
         <div><kbd>W A S D</kbd> MOVE</div>
         <div><kbd>SHIFT</kbd> DASH &nbsp;<kbd>SPACE</kbd> JUMP</div>
         <div><kbd>LMB</kbd> FIRE &nbsp;<kbd>RMB</kbd> ZOOM</div>
         <div><kbd>R</kbd> RELOAD &nbsp;<kbd>1-0 - =</kbd> / <kbd>WHEEL</kbd> / <kbd>Q</kbd> WEAPONS</div>
         <div><kbd>M</kbd> MUTE &nbsp;<kbd>ESC</kbd> PAUSE</div>
       </div>
+      <div class="mctl">
+        <div class="hd">XBOX CONTROLLER</div>
+        <div><kbd>L-STICK</kbd> MOVE &nbsp;<kbd>R-STICK</kbd> LOOK</div>
+        <div><kbd>RT</kbd> FIRE &nbsp;<kbd>LT</kbd> ZOOM</div>
+        <div><kbd>A</kbd> JUMP &nbsp;<kbd>B</kbd> DASH &nbsp;<kbd>X</kbd> RELOAD</div>
+        <div><kbd>Y</kbd> SWAP &nbsp;<kbd>LB</kbd><kbd>RB</kbd> / <kbd>D-PAD</kbd> WEAPONS</div>
+        <div><kbd>MENU</kbd> PAUSE</div>
+      </div>
       <div class="mguns" id="gunList"></div>
     </div>
-    <div class="mgo">CLICK ANYWHERE TO DEPLOY</div>
+    <div class="mgo">CLICK — OR PRESS A / MENU — TO DEPLOY</div>
   </div>
 </div>
 
@@ -169,13 +182,13 @@ body{font-family:var(--mono);color:var(--ink);user-select:none;touch-action:none
     <h2>FLAT<span>LINED</span></h2>
     <div class="mline"></div>
     <div id="dstats"></div>
-    <div class="mgo">CLICK TO REDEPLOY</div>
+    <div class="mgo">CLICK OR PRESS A TO REDEPLOY</div>
   </div>
 </div>
 
 <div id="pause" class="ov off">
   <div><h3>PAUSED</h3>
-  <p>CLICK TO RESUME<br>M MUTE &middot; SHIFT DASH &middot; RMB ZOOM &middot; WHEEL SWAP</p></div>
+  <p>CLICK OR PRESS MENU / A TO RESUME<br>M MUTE &middot; SHIFT/B DASH &middot; RMB/LT ZOOM &middot; WHEEL/BUMPERS SWAP</p></div>
 </div>
 
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"}}</script>
@@ -345,6 +358,70 @@ const rig=new THREE.Group();camera.add(rig);rig.visible=false;
 const gunRigs=[];let flash,muzLight;
 function muzzleAt(g,x,y,z){const o=new THREE.Object3D();o.position.set(x,y,z);g.add(o);return o;}
 function buildGun(i){
+  const g=new THREE.Group();
+  const M=o=>{o.traverse(c=>{if(c.isMesh){c.castShadow=false;c.receiveShadow=false;}});return o;};
+  switch(i){
+    case 0: PB(g,.05,.055,.26,0,.02,-.02);PB(g,.046,.04,.16,0,-.02,.02);
+      PB(g,.044,.12,.06,0,-.095,.09,gmD).rotation.x=.2;
+      PB(g,.02,.02,.05,0,.02,-.17,gmD);PB(g,.008,.02,.012,0,.056,-.12,gmR);
+      specs.push(muzzleAt(g,0,.02,-.21));break;
+    case 1: PB(g,.045,.06,.3,0,0,-.04);PB(g,.03,.03,.24,0,.018,-.26,gmD);
+      PB(g,.078,.078,.09,0,0,-.05,gmD);PB(g,.02,.035,.02,0,.05,.06,gmD);
+      PB(g,.046,.12,.06,0,-.1,.1,gmD).rotation.x=.25;
+      specs.push(muzzleAt(g,0,.018,-.39));break;
+    case 2: PB(g,.05,.08,.3,0,0,-.02);PB(g,.026,.026,.12,0,.012,-.22,gmD);
+      PB(g,.04,.16,.06,0,-.11,.02,gmD).rotation.x=.12;PB(g,.02,.02,.14,0,.012,.18,gmD);
+      PB(g,.036,.09,.05,0,-.08,.11,gmD).rotation.x=.3;PB(g,.01,.015,.01,0,.05,-.24,gmR);
+      specs.push(muzzleAt(g,0,.012,-.29));break;
+    case 3: PB(g,.05,.075,.34,0,0,-.02);PB(g,.055,.055,.16,0,0,-.24,gmD);
+      PB(g,.022,.022,.1,0,.012,-.37,gmD);PB(g,.045,.15,.07,0,-.1,.04,gmD).rotation.x=.28;
+      PB(g,.04,.06,.14,0,-.005,.22,gmD);PB(g,.02,.02,.2,0,.055,-.02,gmD);PB(g,.012,.018,.012,0,.05,-.3,gmR);
+      specs.push(muzzleAt(g,0,.012,-.43));break;
+    case 4: PB(g,.055,.07,.24,0,0,.02);PB(g,.035,.035,.34,0,.02,-.27,gmD);
+      PB(g,.03,.03,.3,0,-.025,-.25,gmD);PB(g,.06,.05,.12,0,-.025,-.2,gmB);
+      PB(g,.045,.07,.16,0,-.01,.2,gmD);PB(g,.01,.02,.01,0,.045,-.4,gmR);
+      specs.push(muzzleAt(g,0,.02,-.45));break;
+    case 5: PB(g,.05,.07,.4,0,0,-.05);PB(g,.024,.024,.34,0,.012,-.4,gmD);
+      PC(g,.032,.16,0,.078,-.04,gmD);PC(g,.026,.02,0,.078,-.125,gmR);
+      PB(g,.045,.09,.18,0,-.01,.24,gmD);PB(g,.05,.06,.1,0,-.06,.1,gmD);
+      specs.push(muzzleAt(g,0,.012,-.58));break;
+    case 6: for(const s of[-1,1]){PB(g,.04,.05,.22,s*.038,0,-.02);PB(g,.018,.018,.05,s*.038,0,-.16,gmD);
+        PB(g,.034,.1,.055,s*.038,-.085,.08,gmD).rotation.x=.22;}
+      PB(g,.05,.04,.1,0,-.02,.06,gmD);
+      specs.push(muzzleAt(g,.038,0,-.19),muzzleAt(g,-.038,0,-.19));break;
+    case 7:{const sp=new THREE.Group();sp.position.set(0,.01,-.25);g.add(sp);
+      for(let k=0;k<6;k++){const a=k/6*Math.PI*2;const b=new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.24,8),gmD);
+        b.rotation.x=Math.PI/2;b.position.set(Math.cos(a)*.036,Math.sin(a)*.036,0);sp.add(b);}
+      PB(g,.11,.11,.03,0,.01,-.38,gmB);PB(g,.09,.1,.3,0,0,.02);PC(g,.07,.12,0,0,.2,gmD);
+      PB(g,.04,.1,.05,0,-.1,.12,gmD).rotation.x=.25;
+      specs.push(muzzleAt(g,0,.01,-.4));gunRigs.mini=sp;break;}
+    case 8: PB(g,.075,.09,.3,0,.01,0);PB(g,.09,.06,.06,0,.02,-.19,gmD);
+      PB(g,.05,.14,.07,0,-.1,.1,gmD).rotation.x=.22;PB(g,.012,.012,.2,0,.062,-.05,gmR);
+      specs.push(muzzleAt(g,0,.02,-.24));break;
+    case 9: PB(g,.015,.05,.5,-.032,0,-.08);PB(g,.015,.05,.5,.032,0,-.08);
+      PB(g,.022,.022,.44,0,0,-.08,gmR);PB(g,.095,.095,.02,0,0,-.28,gmD);
+      PB(g,.095,.095,.02,0,0,-.1,gmD);PB(g,.095,.095,.02,0,0,.08,gmD);
+      PB(g,.06,.08,.16,0,-.01,.2);PB(g,.05,.13,.06,0,-.1,.24,gmD).rotation.x=.25;
+      specs.push(muzzleAt(g,0,0,-.36));break;
+    case 10: PC(g,.06,.14,0,0,.02);PC(g,.045,.2,0,0,-.16,gmD);PC(g,.062,.05,0,0,-.28,gmB);
+      PB(g,.04,.1,.05,0,-.1,.1,gmD).rotation.x=.25;PB(g,.04,.05,.14,0,-.005,.16,gmD);
+      PB(g,.015,.015,.01,0,.055,-.05,gmR);
+      specs.push(muzzleAt(g,0,0,-.31));break;
+    case 11: PB(g,.02,.03,.4,0,0,-.05);PB(g,.02,.02,.18,-.085,.03,-.16,gmD).rotation.z=.5;
+      PB(g,.02,.02,.18,.085,.03,-.16,gmD).rotation.z=-.5;
+      PB(g,.004,.14,.004,0,.075,-.2,gmD);PB(g,.012,.012,.2,0,.032,-.05,gmD);
+      PB(g,.02,.02,.02,0,.032,-.16,gmR);PB(g,.04,.05,.16,0,-.015,.16,gmD);
+      specs.push(muzzleAt(g,0,.032,-.2));break;
+  }
+  var specs=[];
+  g.visible=false;rig.add(g);
+  return{group:M(g),muzzles:specs,muz:specs[0]};
+}
+// (buildGun declares specs after switch — hoist via var above; define properly:)
+for(let i=0;i<12;i++){
+  // rebuild with correct spec hoisting
+}
+function buildGunFixed(i){
   const g=new THREE.Group();const specs=[];
   const M=o=>{o.traverse(c=>{if(c.isMesh){c.castShadow=false;c.receiveShadow=false;}});return o;};
   switch(i){
@@ -403,13 +480,13 @@ function buildGun(i){
   g.visible=false;rig.add(g);
   return{group:M(g),muzzles:specs,muz:specs[0]};
 }
-for(let i=0;i<12;i++)gunRigs.push(buildGun(i));
+for(let i=0;i<12;i++)gunRigs.push(buildGunFixed(i));
 { // muzzle flash quad + light
   const c=document.createElement('canvas');c.width=c.height=64;
   const x=c.getContext('2d');const gr=x.createRadialGradient(32,32,2,32,32,30);
   gr.addColorStop(0,'rgba(255,244,214,1)');gr.addColorStop(.4,'rgba(255,214,140,.85)');gr.addColorStop(1,'rgba(255,214,140,0)');
   x.fillStyle=gr;x.fillRect(0,0,64,64);
-  const t=new THREE.CanvasTexture(t);t.colorSpace=THREE.SRGBColorSpace;
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
   flash=new THREE.Group();
   const fm=new THREE.MeshBasicMaterial({map:t,transparent:true,depthWrite:false});
   for(const r of[0,Math.PI/2]){const p=new THREE.Mesh(new THREE.PlaneGeometry(.3,.3),fm);p.rotation.y=r;flash.add(p);}
@@ -496,7 +573,7 @@ function tryFire(){
   fovKick+=g.kick*90+1;
   flash.visible=true;flashT=.05;flash.rotation.z=rnd(6.28);flash.scale.setScalar(rnd(.7,1.3)*(gunIdx===9?1.6:1));
   muzLight.intensity=6;
-  sShot(g);spawnShards(V3(),UP,0,matShardD,.01,1); // no-op keep warm
+  sShot(g);addRumble(.06+g.vkick*2.6,.1+g.vkick*1.9);
   // shell
   camera.updateMatrixWorld();
   tmpA.setFromMatrixColumn(camera.matrixWorld,0);
@@ -516,7 +593,7 @@ function tryFire(){
   }else if(g.rail){
     const r=fireHitscan(camera.position.clone(),dir,{...g,pierce:99},mo);
     tracer(mo,r.end,.055,true,true);tracer(mo,r.end,.016);
-    shake+=.25;sRail();if(r.any)hitsAny=true;
+    shake+=.25;sRail();addRumble(.35,.7);if(r.any)hitsAny=true;
   }else{
     let any=false;
     for(let i=0;i<(g.pellets||1);i++){
@@ -590,7 +667,7 @@ function makeEnemy(type,x,z){
     else{sHit();hitmark(false);}
   };
   e.die=function(){
-    this.alive=false;kills++;hitmark(true);hitstop=Math.max(hitstop,.055);sShatter();
+    this.alive=false;kills++;hitmark(true);hitstop=Math.max(hitstop,.055);sShatter();addRumble(.22,.5);
     tmpA.set(this.pos.x,1*this.s,this.pos.z);
     spawnShards(tmpA,UP,type==='heavy'?26:14,matShardR,.15*this.s,6);
     scene.remove(this.group);if(this.line)scene.remove(this.line);this.mat.dispose();
@@ -644,7 +721,6 @@ function updateEnemy(e,dt){
     if(e.state==='aim'){
       spd=0;e.aimT+=dt;
       if(e.line){e.line.visible=true;const pa=e.line.geometry.attributes.position;
-        tmpC.copy(hand).addScaledVector(V3(Math.sin(e.yaw),0,Math.cos(e.yaw)).setY((pHead.y-hand.y)/Math.max(dist,.1)*dist/dist||0),0);
         const dir=V3().copy(pHead).sub(hand).normalize();
         pa.setXYZ(0,hand.x,hand.y,hand.z);pa.setXYZ(1,hand.x+dir.x*40,hand.y+dir.y*40,hand.z+dir.z*40);pa.needsUpdate=true;}
       if(e.aimT>.38){
@@ -740,20 +816,30 @@ function updateProjectiles(dt){
   }
 }
 function explode(pos,r,dmg){
-  sBoom();shake+=.45;hitstop=Math.max(hitstop,.03);
+  sBoom();shake+=.45;hitstop=Math.max(hitstop,.03);addRumble(.5,.9);
   const m=new THREE.Mesh(sphGeo,new THREE.MeshBasicMaterial({color:0xe9321f,transparent:true,opacity:.5}));
   m.position.copy(pos);addFx(m,.3,'boom',r);
   spawnShards(pos,UP,10,matShardR,.12,8);spawnShards(pos,UP,8,matShardD,.1,8);
   for(const e of enemies){if(!e.alive)continue;
     tmpA.set(e.pos.x,1,e.pos.z);const d=tmpA.distanceTo(pos);
-    if(d<r+1)e.damage(dmg*(1-Math.min(1,d/(r+1))*.6),tmpB.copy(tmpA).sub(pos).normalize(),tmpA,false);
+    if(d<r+1){e.damage(dmg*(1-Math.min(1,d/(r+1))*.6),tmpB.copy(tmpA).sub(pos).normalize(),tmpA,false);hitsAny=true;}
   }
 }
 
 /* ================= player ================= */
 const P={pos:V3(0,0,21),vel:V3(),onGround:true,hp:100,lastHurt:-9,yaw:0,pitch:0,roll:0,recoil:0,dashT:0,dashCd:0,bloom:0};
-const dashV=V3();let eyeH=1.62,shake=0,adsIn=0;
+const dashV=V3();let eyeH=1.62,shake=0;
 const keys={};
+function inputVec(){
+  const f=(keys.KeyW?1:0)-(keys.KeyS?1:0)-pad.moveY;   // stick up = forward
+  const r=(keys.KeyD?1:0)-(keys.KeyA?1:0)+pad.moveX;
+  const mag=Math.hypot(f,r);
+  if(mag<1e-4)return{x:0,z:0,mag:0};
+  const s=mag>1?1/mag:1;
+  const nx=f*s,nz=r*s;
+  const sy=Math.sin(P.yaw),cy=Math.cos(P.yaw);
+  return{x:-sy*nx+cy*nz,z:-cy*nx-sy*nz,mag:Math.min(1,mag)};
+}
 function resolveHoriz(){
   const r=.5;
   for(const b of worldBoxes){
@@ -769,16 +855,13 @@ function resolveHoriz(){
   P.pos.x=clamp(P.pos.x,-BOUND,BOUND);P.pos.z=clamp(P.pos.z,-BOUND,BOUND);
 }
 function updatePlayer(dt){
-  const f=(keys.KeyW?1:0)-(keys.KeyS?1:0),rr=(keys.KeyD?1:0)-(keys.KeyA?1:0);
-  let wx=0,wz=0;
-  if(f||rr){const sy=Math.sin(P.yaw),cy=Math.cos(P.yaw);
-    wx=-sy*f+cy*rr;wz=-cy*f-sy*rr;const l=Math.hypot(wx,wz);wx/=l;wz/=l;}
+  const mv=inputVec();
   const spd=8.2*(1-adsL*.25);
   const k=1-Math.exp(-(P.onGround?12:3)*dt);
-  P.vel.x+=(wx*spd-P.vel.x)*k;P.vel.z+=(wz*spd-P.vel.z)*k;
+  P.vel.x+=(mv.x*spd-P.vel.x)*k;P.vel.z+=(mv.z*spd-P.vel.z)*k;
   P.dashCd-=dt;if(P.dashT>0)P.dashT-=dt;
   dashV.multiplyScalar(Math.exp(-7*dt));
-  if(keys.Space&&P.onGround){P.vel.y=7.6;P.onGround=false;}
+  if((keys.Space||pad.jump)&&P.onGround){P.vel.y=7.6;P.onGround=false;}
   P.vel.y-=21*dt;
   const prevY=P.pos.y;
   P.pos.x+=(P.vel.x+dashV.x)*dt;P.pos.z+=(P.vel.z+dashV.z)*dt;
@@ -799,23 +882,26 @@ function updatePlayer(dt){
 }
 function tryDash(){
   if(P.dashCd>0||mode!=='play')return;
-  const f=(keys.KeyW?1:0)-(keys.KeyS?1:0),rr=(keys.KeyD?1:0)-(keys.KeyA?1:0);
-  if(f||rr){const sy=Math.sin(P.yaw),cy=Math.cos(P.yaw);
-    dashV.set(-sy*f+cy*rr,0,-cy*f-sy*rr).normalize().multiplyScalar(24);}
-  else dashV.set(-Math.sin(P.yaw),0,-Math.cos(P.yaw)).multiplyScalar(24);
-  P.dashT=.16;P.dashCd=1.15;fovKick+=9;sDash();
+  const mv=inputVec();
+  let dx,dz2;
+  if(mv.mag>.01){dx=mv.x/mv.mag;dz2=mv.z/mv.mag;}
+  else{dx=-Math.sin(P.yaw);dz2=-Math.cos(P.yaw);}
+  dashV.set(dx,0,dz2).normalize().multiplyScalar(24);
+  P.dashT=.16;P.dashCd=1.15;fovKick+=9;sDash();addRumble(.28,.1);
   spawnShards(V3(P.pos.x,.2,P.pos.z),UP,4,matShardD,.05,2,.5);
 }
 function damagePlayer(d){
   if(mode!=='play')return;
-  P.hp-=d;P.lastHurt=tNow;hurtO=1;shake+=.35;sHurt();
+  P.hp-=d;P.lastHurt=tNow;hurtO=1;shake+=.35;sHurt();addRumble(.3,.85);
   if(P.hp<=0){P.hp=0;startDeath();}
 }
 
-/* ================= input ================= */
+/* ================= input (keyboard + mouse) ================= */
+let mouseFire=false,mouseAds=false;
 addEventListener('keydown',e=>{
   if(e.repeat)return;keys[e.code]=true;
   if(e.code==='KeyM')toggleMute();
+  if(e.code==='Escape'&&mode==='play'&&!document.pointerLockElement)pauseGame();
   if(mode!=='play')return;
   if(e.code==='KeyR')startReload();
   if(e.code==='ShiftLeft'||e.code==='ShiftRight')tryDash();
@@ -827,12 +913,12 @@ addEventListener('keyup',e=>keys[e.code]=false);
 addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('mousedown',e=>{
   if(document.pointerLockElement!==renderer.domElement)return;
-  if(e.button===0){trigger=true;wantSemi=true;}
-  if(e.button===2)adsHeld=true;
+  if(e.button===0){mouseFire=true;wantSemi=true;}
+  if(e.button===2)mouseAds=true;
 });
 addEventListener('mouseup',e=>{
-  if(e.button===0)trigger=false;
-  if(e.button===2)adsHeld=false;
+  if(e.button===0)mouseFire=false;
+  if(e.button===2)mouseAds=false;
 });
 addEventListener('wheel',e=>{if(mode==='play')switchTo((gunIdx+(e.deltaY>0?1:-1)+12)%12);});
 let lookBoost=0;
@@ -843,6 +929,68 @@ addEventListener('mousemove',e=>{
   swayX=clamp(swayX-e.movementX*.0004,-.05,.05);
   lookBoost=Math.min(1,lookBoost+(Math.abs(e.movementX)+Math.abs(e.movementY))*.004);
 });
+
+/* ================= gamepad ================= */
+const pad={active:false,gp:null,moveX:0,moveY:0,lookX:0,lookY:0,fire:false,ads:false,jump:false,
+  prevFire:false,prev:[],e:{}};
+let rumbleW=0,rumbleS=0,nextRumble=0,aimOnEnemy=false;
+const PADMAP={a:0,b:1,x:2,y:3,lb:4,rb:5,back:8,start:9,ls:10,rs:11,du:12,dd:13,dl:14,dr:15};
+function stickLin(v,dz=.15){const a=Math.abs(v);return a<dz?0:Math.sign(v)*(a-dz)/(1-dz);}
+function stickCur(v,dz=.12){const a=Math.abs(v);if(a<dz)return 0;const n=(a-dz)/(1-dz);return Math.sign(v)*n*n;}
+function setPadInd(on){$('padInd').style.display=on?'block':'none';}
+function pollPad(){
+  let gp=null;
+  if(navigator.getGamepads)for(const g of navigator.getGamepads()){if(g&&g.connected){gp=g;break;}}
+  pad.gp=gp;
+  const E=pad.e;
+  if(!gp){
+    if(pad.active){pad.active=false;setPadInd(false);}
+    pad.fire=pad.ads=pad.jump=false;pad.moveX=pad.moveY=pad.lookX=pad.lookY=0;
+    for(const k in E)E[k]=false;
+    return;
+  }
+  pad.active=true;setPadInd(true);
+  const b=gp.buttons,ax=gp.axes;
+  const dn=i=>!!(b[i]&&b[i].pressed);
+  const rt=b[7]?b[7].value:0,lt=b[6]?b[6].value:0;
+  pad.fire=rt>.32;pad.ads=lt>.32;pad.jump=dn(PADMAP.a);
+  E.fire=pad.fire&&!pad.prevFire;pad.prevFire=pad.fire;
+  for(const k in PADMAP){
+    const i=PADMAP[k],now=dn(i);
+    E[k]=now&&!pad.prev[i];pad.prev[i]=now;
+  }
+  pad.moveX=stickLin(ax[0]||0);pad.moveY=stickLin(ax[1]||0);
+  pad.lookX=stickCur(ax[2]||0);pad.lookY=stickCur(ax[3]||0);
+}
+function padFlow(){ // pad-driven menu / pause / restart (no pointer lock involved)
+  if(!pad.active)return;
+  const ok=pad.e.start||pad.e.a;
+  if(mode==='menu'&&ok)startGame(false);
+  else if(mode==='dead'&&ok)startGame(false);
+  else if(mode==='pause'&&ok)resumePad();
+  else if(mode==='play'&&pad.e.start)pauseGame();
+}
+function padRumbleTick(){
+  if(!pad.active||!pad.gp||(!rumbleW&&!rumbleS))return;
+  const act=pad.gp.vibrationActuator;
+  if(!act||tNow<nextRumble)return;
+  nextRumble=tNow+.085;
+  act.playEffect('dual-rumble',{duration:90,strongMagnitude:Math.min(1,rumbleS),weakMagnitude:Math.min(1,rumbleW)}).catch(()=>{});
+  rumbleW*=.3;rumbleS*=.3;
+  if(rumbleW<.02)rumbleW=0;if(rumbleS<.02)rumbleS=0;
+}
+function addRumble(w,s){rumbleW=Math.min(1.2,rumbleW+w);rumbleS=Math.min(1.2,rumbleS+s);}
+addEventListener('gamepadconnected',()=>{setPadInd(true);addRumble(.25,.55);});
+addEventListener('gamepaddisconnected',()=>{setPadInd(false);rumbleW=rumbleS=0;if(mode==='play')pauseGame();});
+function padLook(dt){
+  const lx=pad.lookX,ly=pad.lookY;
+  if(!lx&&!ly)return;
+  const rate=3.1*(camera.fov/76)*(aimOnEnemy?.62:1); // gentle sticky aim over targets — remove factor for raw input
+  P.yaw-=lx*rate*dt;
+  P.pitch=clamp(P.pitch-ly*rate*dt,-1.5,1.5);
+  swayX=clamp(swayX-lx*dt*.045,-.05,.05);
+  lookBoost=Math.min(1,lookBoost+(Math.abs(lx)+Math.abs(ly))*dt*1.7); // stick flicks speed up time too
+}
 
 /* ================= audio (all synthesized) ================= */
 let AC=null,master,noiseBuf,whirG,whirOsc,droneF,muted=false,nextBeat=0;
@@ -910,6 +1058,9 @@ function audioTick(){
     kickAt(nextBeat);hatAt(nextBeat+spb/2);nextBeat+=spb;
   }
 }
+// gamepad-started sessions may have a suspended context until a real click/keypress happens
+addEventListener('pointerdown',()=>{if(AC&&AC.state==='suspended')AC.resume().catch(()=>{});});
+addEventListener('keydown',()=>{if(AC&&AC.state==='suspended')AC.resume().catch(()=>{});});
 
 /* ================= HUD ================= */
 const hudEl=$('hud'),xh=$('xh'),hmEl=$('hm');
@@ -957,13 +1108,14 @@ function updateHud(dt){
   const prog=clamp((.75-ts)/.43,0,1);
   $('barT').style.transform=`translateY(${(prog-1)*101}%)`;
   $('barB').style.transform=`translateY(${(1-prog)*101}%)`;
-  // crosshair "hot" probe
+  // crosshair "hot" probe (also feeds stick aim-assist)
   if(mode==='play'){
     const dir=camera.getWorldDirection(tmpA);
     const w=rayWallDist(camera.position,dir);
     const hs=rayEnemyHits(camera.position,dir);
-    xh.classList.toggle('hot',hs.length&&hs[0].d<w.d);
-  }else xh.classList.remove('hot');
+    const hot=!!(hs.length&&hs[0].d<w.d);
+    xh.classList.toggle('hot',hot);aimOnEnemy=hot;
+  }else{xh.classList.remove('hot');aimOnEnemy=false;}
   // offscreen chevrons
   let ci=0;
   if(mode==='play'){
@@ -993,6 +1145,7 @@ function marquee(){
 
 /* ================= waves ================= */
 let wave=0,waveActive=false,waveQueue=[],spawnT=0,betweenT=1.2,kills=0,shots=0,hitsC=0,playT=0;
+let ts=1,hitstop=0;
 function comp(n){
   const c=Math.min(4+n*2,26),a=[];
   for(let i=0;i<c;i++){const r=Math.random();
@@ -1041,22 +1194,35 @@ function resetWorld(){
   for(const f of fx){scene.remove(f.m);f.m.material.dispose();}
   enemies=[];projectiles=[];shardsA=[];tracers=[];fx=[];
   P.pos.set(0,0,21);P.vel.set(0,0,0);P.yaw=0;P.pitch=0;P.roll=0;P.hp=100;P.lastHurt=-9;P.bloom=0;P.recoil=0;
-  dashV.set(0,0,0);dashV.multiplyScalar(0);
+  dashV.set(0,0,0);
   ammo=GUNS.map(g=>g.mag);gunIdx=0;lastIdx=1;switchT=0;pendSw=false;reloading=0;spin=0;ts=1;hitstop=0;
+  mouseFire=false;mouseAds=false;trigger=false;adsHeld=false;wantSemi=false;
   wave=0;waveActive=false;waveQueue=[];betweenT=1.2;kills=0;shots=0;hitsC=0;playT=0;dieT=0;
   applyGunVisible();hudWeapon();hudAmmo();updateSlots();
 }
-function startGame(){
-  initAudio();AC&&AC.resume();
+function lockMouse(){const p=renderer.domElement.requestPointerLock();if(p&&p.catch)p.catch(()=>{});}
+function startGame(withMouse=true){
+  initAudio();if(AC)AC.resume().catch(()=>{});
   for(const d of menuDummies){scene.remove(d.group);d.mat.dispose();}
   menuDummies.length=0;
   resetWorld();
   $('menu').classList.add('off');$('death').classList.add('off');
   hudEl.classList.add('on');rig.visible=true;lastAmmoShown=-1;
   mode='play';
-  renderer.domElement.requestPointerLock();
+  if(withMouse)lockMouse();
 }
-function startDeath(){mode='dying';dieT=0;trigger=false;adsHeld=false;}
+function pauseGame(){
+  if(mode!=='play')return;
+  mode='pause';mouseFire=false;mouseAds=false;
+  $('pause').classList.remove('off');
+  if(AC)AC.suspend();
+  if(document.pointerLockElement)document.exitPointerLock();
+}
+function resumePad(){
+  mode='play';$('pause').classList.add('off');
+  if(AC){AC.resume();nextBeat=AC.currentTime+.1;}
+}
+function startDeath(){mode='dying';dieT=0;mouseFire=false;mouseAds=false;}
 function showDeath(){
   mode='dead';document.exitPointerLock();
   const acc=shots?Math.round(hitsC/shots*100):0;
@@ -1068,14 +1234,16 @@ function showDeath(){
 }
 document.addEventListener('pointerlockchange',()=>{
   if(document.pointerLockElement!==renderer.domElement){
-    if(mode==='play'){mode='pause';trigger=false;adsHeld=false;$('pause').classList.remove('off');AC&&AC.suspend();}
+    if(mode==='play')pauseGame(); // mouse-driven pause (ESC)
   }else{
     if(mode==='pause'){mode='play';$('pause').classList.add('off');AC&&AC.resume();nextBeat=AC?AC.currentTime:0;}
   }
 });
- $('menu').addEventListener('click',startGame);
- $('death').addEventListener('click',startGame);
- $('pause').addEventListener('click',()=>renderer.domElement.requestPointerLock());
+ $('menu').addEventListener('click',()=>startGame(true));
+ $('death').addEventListener('click',()=>startGame(true));
+ $('pause').addEventListener('click',lockMouse);
+// pad-mode playing + click = switch to mouse seamlessly
+renderer.domElement.addEventListener('click',()=>{if(mode==='play'&&!document.pointerLockElement)lockMouse();});
 
 /* ================= main loop ================= */
 let tNow=0,last=performance.now();
@@ -1093,6 +1261,18 @@ function setCamera(dt){
 function update(dt){
   tNow+=dt;
   if(mode==='play'){
+    // merge mouse + pad state, then consume pad edges
+    trigger=mouseFire||pad.fire;
+    adsHeld=mouseAds||pad.ads;
+    if(pad.active){
+      if(pad.e.b)tryDash();
+      if(pad.e.x||pad.e.dd)startReload();
+      if(pad.e.y||pad.e.du)switchTo(lastIdx);
+      if(pad.e.rb||pad.e.dr)switchTo((gunIdx+1)%12);
+      if(pad.e.lb||pad.e.dl)switchTo((gunIdx+11)%12);
+      if(pad.e.fire)wantSemi=true;
+    }
+    padLook(dt);
     const sp=Math.hypot(P.vel.x,P.vel.z);
     let target=.34+clamp(sp/7.5,0,1)*.66;
     if(tNow-firedAt<.3)target=Math.max(target,.92);
@@ -1134,6 +1314,7 @@ function update(dt){
 function loop(now){
   requestAnimationFrame(loop);
   const dt=Math.min(.05,(now-last)/1000);last=now;
+  pollPad();padFlow();padRumbleTick();
   if(mode==='menu'){
     tNow+=dt;
     const a=tNow*.12;
