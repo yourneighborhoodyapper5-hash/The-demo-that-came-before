@@ -235,7 +235,7 @@ body{font-family:var(--mono);color:var(--ink);user-select:none;touch-action:none
 </div>
 
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"}}</script>
-<script type="text/plain" id="legacyGameScript">
+<script type="module" id="legacyGameScript">
 import * as THREE from 'three';
 
 /* ================= helpers ================= */
@@ -1431,7 +1431,8 @@ buildSlots();hudWeapon();hudAmmo();updateSlots();
   $('gunList').innerHTML=GUNS.map((g,i)=>`<div><b>${pad2(i+1)}</b>${g.name} — ${g.sub}</div>`).join('');
 }
 requestAnimationFrame(loop);
-<script>
+</script>
+<script type="text/plain" id="replacementGameScript">
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
